@@ -38,9 +38,9 @@ namespace PlatformCoreTest
         /// <returns></returns>
         private async Task getVersionInfo()
         {
-            var applicationId = "90ugj76";
-            var environmentId = "wv8s5ct";
-            var configurationProfileId = "c3u90n8";
+            var applicationId = "<applicationId>";
+            var environmentId = "<environmentId>";
+            var configurationProfileId = "<configurationProfileId>";
 
             var startSessionResponse =
                 await amazonAppConfigDataClient.StartConfigurationSessionAsync(
