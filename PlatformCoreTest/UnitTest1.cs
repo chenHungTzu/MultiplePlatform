@@ -74,19 +74,23 @@ namespace PlatformCoreTest
         /// </summary>
         /// <param name="imageWithTag"></param>
         /// <param name="containerPort"></param>
-        /// <returns>url of container</returns>
-        public async Task<string> LaunchContainer(string imageWithTag, ushort hostPort, ushort containerPort)
+        /// <returns>uri of container</returns>
+        public async Task<string> LaunchContainer(string imageWithTag, ushort containerPort = 80)
         {
             var container = new ContainerBuilder()
                     .WithImage(imageWithTag)
-                    .WithPortBinding(hostPort, containerPort)
+                    .WithPortBinding(containerPort, true)
+                    .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(request => request.ForPath("/App")))
+                    .WithStartupCallback((c, t) => Task.CompletedTask)
                     .Build();
 
             await container.StartAsync()
                            .ConfigureAwait(false);
 
             var requestUri =
-                new UriBuilder(Uri.UriSchemeHttp, container.Hostname, container.GetMappedPublicPort(containerPort)).Uri.ToString();
+                new UriBuilder(Uri.UriSchemeHttp,
+                container.Hostname,
+                container.GetMappedPublicPort(containerPort)).Uri.ToString();
 
             return requestUri;
         }
@@ -145,6 +149,10 @@ namespace PlatformCoreTest
 
     public class UnitTest1 : TestBase
     {
+        /// <summary>
+        /// 執行測試
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task Test()
         {
@@ -153,16 +161,16 @@ namespace PlatformCoreTest
                 // 取得版本資訊後,得到對應平台的版本號
                 // 接著透過testContainer啟動容器
 
-                // 啟動PlatformA
-                var containerBUrl = await LaunchContainer(VersionMap.platformB.image_version, 8082, 80);
-
                 // 啟動PlatformB
-                var containerCUrl = await LaunchContainer(VersionMap.platformC.image_version, 8083, 80);
+                var containerBUrl = await LaunchContainer(VersionMap.platformB.image_version);
+
+                // 啟動PlatformC
+                var containerCUrl = await LaunchContainer(VersionMap.platformC.image_version);
 
                 Environment.SetEnvironmentVariable("platformB", containerBUrl);
                 Environment.SetEnvironmentVariable("platformC", containerCUrl);
 
-                // 透過 webhost 進行驗證
+                // 啟動Webhost進行驗證
                 var result = await MockHttpClient.GetAsync<WeatherForecast[]>("WeatherForecast");
 
                 Assert.Equal(5, result.Length);

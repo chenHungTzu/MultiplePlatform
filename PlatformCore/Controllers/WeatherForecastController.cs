@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 
 namespace PlatformCore.Controllers
 {
@@ -9,31 +8,32 @@ namespace PlatformCore.Controllers
     {
         private readonly HttpClient httpClient;
 
-        public WeatherForecastController()
+        public WeatherForecastController(IHttpClientFactory httpClientFactory)
         {
-            httpClient = new HttpClient();
+            httpClient = httpClientFactory.CreateClient();
+        }
+
+        /// <summary>
+        /// 呼叫API並取得結果
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        private async Task<List<WeatherForecast>?> GetWeatherForecasts(string url)
+        {
+            var resp = await httpClient.GetAsync(url);
+            return await resp.Content.ReadFromJsonAsync<List<WeatherForecast>>();
         }
 
         [HttpGet(Name = "GetWeatherForecast")]
-        public async Task<WeatherForecast[]> Get()
+        public async Task<List<WeatherForecast>> Get()
         {
-            // get platform A api
-            var responseOfB = await httpClient.GetAsync($"{Environment.GetEnvironmentVariable("platformB")}WeatherForecast");
-            var contentOfB = await responseOfB.Content.ReadAsStringAsync();
-            var resultOfB = JsonSerializer.Deserialize<List<WeatherForecast>>(contentOfB, new JsonSerializerOptions()
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
             // get platform B api
-            var responseOfC = await httpClient.GetAsync($"{Environment.GetEnvironmentVariable("platformC")}WeatherForecast");
-            var contentOfC = await responseOfC.Content.ReadAsStringAsync();
-            var resultOfC = JsonSerializer.Deserialize<List<WeatherForecast>>(contentOfC, new JsonSerializerOptions()
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var resultOfB = await GetWeatherForecasts($"{Environment.GetEnvironmentVariable("platformB")}WeatherForecast");
 
-            return resultOfB.Concat(resultOfC).ToArray();
+            // get platform C api
+            var resultOfC = await GetWeatherForecasts($"{Environment.GetEnvironmentVariable("platformC")}WeatherForecast");
+
+            return Enumerable.Concat(resultOfB, resultOfC).ToList();
         }
     }
 }

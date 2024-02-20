@@ -6,15 +6,17 @@ EXPOSE 80
 EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["PlatformB/PlatformB.csproj", "PlatformB/"]
-RUN dotnet restore "./PlatformB/PlatformB.csproj"
+RUN dotnet restore "./PlatformB/./PlatformB.csproj"
 COPY . .
 WORKDIR "/src/PlatformB"
-RUN dotnet build "PlatformB.csproj" -c Release -o /app/build
+RUN dotnet build "./PlatformB.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "PlatformB.csproj" -c Release -o /app/publish -p PublishReadyToRun=true -r linux-x64
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "./PlatformB.csproj" -c $BUILD_CONFIGURATION -o /app/publish  /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
