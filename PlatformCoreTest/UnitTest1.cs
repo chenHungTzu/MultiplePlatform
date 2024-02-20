@@ -3,6 +3,7 @@ using Amazon.AppConfigData.Model;
 using DotNet.Testcontainers.Builders;
 using Microsoft.AspNetCore.Mvc.Testing;
 using PlatformCore;
+using System.Net.Http.Json;
 using System.Text.Json;
 using static PlatformCoreTest.MockHttpClientFactory<PlatformCore.Program>;
 
@@ -37,9 +38,9 @@ namespace PlatformCoreTest
         /// <returns></returns>
         private async Task getVersionInfo()
         {
-            var applicationId = "<applicationId>";
-            var environmentId = "<environmentId>";
-            var configurationProfileId = "<configurationProfileId>";
+            var applicationId = "90ugj76";
+            var environmentId = "wv8s5ct";
+            var configurationProfileId = "c3u90n8";
 
             var startSessionResponse =
                 await amazonAppConfigDataClient.StartConfigurationSessionAsync(
@@ -137,12 +138,7 @@ namespace PlatformCoreTest
                 if (response.IsSuccessStatusCode == false)
                     throw new Exception(response.ReasonPhrase);
 
-                using Stream stream = await response.Content.ReadAsStreamAsync();
-
-                return await JsonSerializer.DeserializeAsync<TResult>(stream, new JsonSerializerOptions()
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                return await response.Content.ReadFromJsonAsync<TResult>();
             }
         }
     }
